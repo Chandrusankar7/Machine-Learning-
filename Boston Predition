@@ -1,0 +1,181 @@
+import numpy as np
+import pandas as pd
+from sklearn.datasets import load_boston
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, accuracy_score
+
+from keras import models
+from keras import layers
+from keras.models import Sequential
+from keras.layers import Dense
+
+import matplotlib.pyplot as plt
+
+boston_dataset = load_boston()
+boston = pd.DataFrame(boston_dataset.data, columns=boston_dataset.feature_names)
+boston.head()
+
+boston['ZN'] = boston_dataset.target
+boston
+
+boston.isnull().sum()
+
+X = boston.drop(axis = 0, columns = ['ZN'])
+Y = boston['ZN']
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2, random_state=5)
+print(X_train.shape)
+print(X_test.shape)
+print(Y_train.shape)
+print(Y_test.shape)
+
+X_test
+
+# RMSprop Optimizer
+
+RMSprop stands for Root Mean Square Propagation. It is gradient descent optimization algorithm for mini-batch learning of neural networks. The RMSprop optimizer restricts the oscillations in the vertical direction. Therefore, we can increase our learning rate and our algorithm could take larger steps in the horizontal direction converging faster. 
+
+Custom step size - cust_step_size = step_size / (1e-8 + sqrt(s))
+
+Mean squared partial derivative for one parameter - s(t+1) = (s(t) * rho) + (f'(x(t))^2 * (1.0-rho))
+
+Custom step size update - cust_step_size(t+1) = step_size / (1e-8 + RMS(s(t+1)))
+
+Parameter update - x(t+1) = x(t) – cust_step_size(t+1) * f'(x(t))
+
+RMSmodel = models.Sequential()
+RMSmodel.add(layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)))
+RMSmodel.add(layers.Dense(64, activation='relu'))
+RMSmodel.add(layers.Dense(1))
+
+RMSmodel.compile(optimizer='rmsprop', loss='mse', metrics=['mae'])
+RMSmodel.summary()
+
+RMSmodel.fit(X_train, Y_train, epochs=80, batch_size=16, verbose=1)
+
+RMStest_mse_score, RMStest_mae_score = RMSmodel.evaluate(X_test, Y_test)
+
+print(RMStest_mse_score, RMStest_mae_score)
+RMSpred = RMSmodel.predict(X_test)
+print(RMSpred[0])
+
+RMShistory = RMSmodel.fit(X_train, Y_train, epochs=100, batch_size=10, validation_split = 0.2)
+# evaluate the keras model
+_, RMSaccuracy = RMSmodel.evaluate(X_test, Y_test)
+print('Accuracy: %.2f' % (RMSaccuracy*100))
+
+plt.plot(RMShistory.history['loss'])
+plt.plot(RMShistory.history['val_loss'])
+plt.title('RMS model accuracy')
+plt.ylabel('RMS accuracy')
+plt.xlabel('RMS epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+
+# Adam Optimizer
+
+Adam is an adaptive learning rate optimization algorithm that’s been designed specifically for training deep neural networks. The algorithms leverages the power of adaptive learning rates methods to find individual learning rates for each parameter. It also has advantages of Adagrad which works really well in settings with sparse gradients, but struggles in non-convex optimization of neural networks, and RMSprop, which tackles to resolve some of the problems of Adagrad and works really well in on-line settings
+
+Gradient - g(t) = f'(x(t-1))
+
+First moment - m(t) = beta1 * m(t-1) + (1 – beta1) * g(t)
+
+Second Moment - v(t) = beta2 * v(t-1) + (1 – beta2) * g(t)^2
+
+First moment bias correction, mhat(t) = m(t) / (1 – beta1(t))
+
+Second moment bias correction, vhat(t) = v(t) / (1 – beta2(t))
+
+Beta values,
+beta1(t) = beta1^t
+beta2(t) = beta2^t
+
+Parameter value - x(t) = x(t-1) – alpha * mhat(t) / (sqrt(vhat(t)) + eps)
+
+Re-ordering update, 
+alpha(t) = alpha * sqrt(1 – beta2(t)) / (1 – beta1(t))
+x(t) = x(t-1) – alpha(t) * m(t) / (sqrt(v(t)) + eps)
+
+Adammodel = models.Sequential()
+Adammodel.add(layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)))
+Adammodel.add(layers.Dense(64, activation='relu'))
+Adammodel.add(layers.Dense(1))
+
+Adammodel.compile(optimizer='adam', loss='mse', metrics=['mae'])
+Adammodel.summary()
+
+Adammodel.fit(X_train, Y_train, epochs=80, batch_size=16, verbose=1)
+
+Adamtest_mse_score, Adamtest_mae_score = Adammodel.evaluate(X_test, Y_test)
+
+print(Adamtest_mse_score, Adamtest_mae_score)
+Adampred = Adammodel.predict(X_test)
+print(Adampred[0])
+
+Adamhistory = Adammodel.fit(X_train, Y_train, epochs=100, batch_size=10, validation_split = 0.2)
+_, Adamaccuracy = Adammodel.evaluate(X_test, Y_test)
+print('Accuracy: %.2f' % (Adamaccuracy*100))
+
+plt.plot(Adamhistory.history['loss'])
+plt.plot(Adamhistory.history['val_loss'])
+plt.title('ADAM model accuracy')
+plt.ylabel('ADAM accuracy')
+plt.xlabel('ADAM epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+
+plt.plot(Adamhistory.history['val_loss'])
+plt.plot(RMShistory.history['val_loss'])
+plt.show()
+
+# Batch Normalization
+
+Batch normalization is a technique for training very deep neural networks that standardizes the inputs to a layer for each mini-batch. This has the effect of stabilizing the learning process and dramatically reducing the number of training epochs required to train deep networks. It normalises a layer input by subtracting the mini-batch mean and dividing it by the mini-batch standard deviation. Batch normalization accelerates training, in some cases by halving the epochs or better, and provides some regularization, reducing generalization error.
+
+from keras.layers import BatchNormalization
+from sklearn.metrics import mean_squared_error
+
+Normmodel = Sequential()
+Normmodel.add(Dense(12, input_dim=12, activation='relu'))
+Normmodel.add(Dense(8, activation='relu'))
+Normmodel.add(BatchNormalization())
+Normmodel.add(Dense(1, activation='sigmoid'))
+
+Normmodel.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+
+Normmodel.summary()
+
+Normhistory = Normmodel.fit(X_train, Y_train, epochs=100, batch_size=10, validation_split = 0.2)
+# evaluate the keras model
+_, Normaccuracy = Normmodel.evaluate(X_test, Y_test)
+print('Accuracy: %.2f' % (Normaccuracy*100))
+
+Normpredictions = Normmodel.predict(X_test)
+Normpredictions = (Normmodel.predict(X_test) > 0.5).astype(int)
+print(mean_squared_error(Y_test, Normpredictions))
+
+# Dropout
+
+Dropout is a regularization techinque used to prevent overfitting. A fully connected layer occupies most of the parameters, and hence, neurons develop co-dependency amongst each other during training which curbs the individual power of each neuron leading to over-fitting of training data
+
+from keras.layers import Dropout
+
+drpmodel = Sequential()
+drpmodel.add(Dense(12, input_dim=12, activation='relu'))
+drpmodel.add(Dense(8, activation='relu'))
+drpmodel.add(Dropout(0.1))
+drpmodel.add(Dense(1, activation='sigmoid'))
+
+drpmodel.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+drpmodel.summary()
+
+drphistory = drpmodel.fit(X_train, Y_train, epochs=100, batch_size=10, validation_split = 0.2)
+_, drpaccuracy = drpmodel.evaluate(X_test, Y_test)
+
+print('Accuracy: %.2f' % (drpaccuracy*100))
+
+drppredictions = drpmodel.predict(X_test)
+drppredictions = (drpmodel.predict(X_test) > 0.5).astype(float)
+print(mean_squared_error(Y_test, drppredictions))
+
