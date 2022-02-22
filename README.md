@@ -1,1 +1,1 @@
-# Machine-Learning Jypter codes
+# Machine-Learning Jupyter codes
