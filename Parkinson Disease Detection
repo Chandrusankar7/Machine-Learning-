@@ -1,0 +1,213 @@
+# Parkinson Disease detection
+
+Parkinson Disease is a brain neurological disorder. It leads to shaking of the body, hands and provides stiffness to the body. No proper cure or treatment is available yet at the advanced stage. Treatment is possible only when done at the early or onset of the disease. These will not only reduce the cost of the disease but will also possibly save a life. Most methods available can detect Parkinson in an advanced stage; which means loss of approx. 60% dopamine in basal ganglia and is responsible for controlling the movement of the body with a small amount of dopamine. More than 145,000 people have been found alone suffering in the U.K and in India, almost one million population suffers from this disease and it’s spreading fast in the entire world.
+
+Machine learning is a discipline of artificial intelligence that develops algorithms with the capacity to generalize behaviors and recognize hidden patterns in a large amount of data, defined by Arthur Samuel as the field of study that gives computers the ability to learn without being explicitly programmed. ML techniques can be classified into two categories depending on the type of processing that is carried out: symbolic processing, which uses formal languages, logical orders, and symbols, and sub symbolic processing, which is designed to estimate functional relationships between data. Within ML techniques, artificial neural networks (ANN) are those whose architecture is based in multiple-layer hierarchical models that can learn representations of data with multiple levels of abstraction. However, they require a large amount of input data and a careful training process. All these techniques are receiving increasing interest from the medical domain, where they have been mostly used in image analysis , although in recent years, their application has spread to other areas .
+
+There are a wide variety of techniques in the field of neurology that are used individually or in combination to support the clinical diagnosis. Commonly used techniques include image-based tests (single photon emission computed tomography (SPECT), M-iodobenzyl-guanidine cardiac scintiscan (MIBG), however, these are costly and are not always accessible.
+
+The analysis of EEG has already been used in other non-epileptic neurological diseases such as Alzheimer’s, schizophrenia, and major depressive disorder  and there are numerous articles that apply ML techniques to study their EEG . EEG processing using ML techniques has also been used for therapeutic purposes such as stroke rehabilitation . The use of EEG to study Parkinson’s disease has not been fully validated, but in the last 5 years, its interest has increased with the introduction of ML techniques in EEG analysis, leading to a growing development of the literature. The aim of this review consists, firstly, in evaluating the current impact of ML techniques on the EEG analysis of patients with PD, and secondly, naming the most commonly used techniques and analyzing those that have provided the best results. These objectives, focused on the diagnosis and evolution of PD, will provide an entry point for further studies seeking to determine an early, non-invasive and accessible diagnostic marker that minimizes the delay on the disease diagnosis. Hopefully, the advances in new diagnostic techniques in PD could help to detect this disease in its early stages, that is, in pre-motor stage, favouring the development of preventive therapies that slow the degree of advancement of motor and cognitive decline in PD.
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import sklearn as sk
+
+prk=pd.read_csv(r'''C:\Users\Asus\Downloads\parkinsons_1.csv''',encoding='cp1252')
+
+Importing models from dataset
+
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+from sklearn import tree
+from sklearn import ensemble
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+from sklearn.metrics import (confusion_matrix, precision_recall_curve, auc,
+                             roc_curve, recall_score, classification_report, f1_score,
+                             precision_recall_fscore_support)
+
+def acc_sensitivity_specificity(c, p): # corr, pred
+    cmatrix = confusion_matrix(c,p)
+    total = sum(sum(cmatrix))
+    accuracy=(cmatrix[0,0]+cmatrix[1,1])/total
+    spec = cmatrix[0,0]/(cmatrix[0,0]+cmatrix[0,1])
+    sens = cmatrix[1,1]/(cmatrix[1,0]+cmatrix[1,1])
+    return accuracy, sens, spec
+
+prk
+
+prk.info()
+
+Data Split
+
+prk['class']=prk['class'].interpolate()
+X = prk.drop(['class'],axis=1).values
+y = prk['class'].values
+X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.25, random_state=101)
+
+# Naive Bayes Classifier
+
+nb_clf=GaussianNB()
+nb_clf.fit(X_train,Y_train)
+nb_clf.score(X_test,Y_test)
+
+y_predict_nb = nb_clf.predict(X_test)
+#y_test= np.argmax(y_predict_nb, axis = 0)
+nb_cm = confusion_matrix(Y_test, y_predict_nb)
+sns.heatmap(nb_cm, annot=True)
+
+print(classification_report(Y_test,y_predict_nb))
+print('Accuracy', 'Specificity', 'Sensitivity')
+print('----------------------')
+print(np.round(nb_cm,4)*100)
+
+pred_prob_nb = nb_clf.predict_proba(X_test)
+fpr_nb, tpr_nb, thresh_nb = roc_curve(Y_test, pred_prob_nb[:,1], pos_label=1)
+
+# KNN Classifier
+
+knn_clf=KNeighborsClassifier(n_neighbors=3)
+knn_clf.fit(X_train,Y_train)
+knn_clf.score(X_test,Y_test)
+
+y_predict_knn = knn_clf.predict(X_test)
+knn_cm = confusion_matrix(Y_test, y_predict_knn)
+sns.heatmap(knn_cm, annot=True)
+
+print(classification_report(Y_test,y_predict_knn))
+knn_cm = acc_sensitivity_specificity(Y_test, y_predict_knn)
+print('Accuracy', 'Specificity', 'Sensitivity')
+print('----------------------')
+print(np.round(knn_cm,4)*100)
+
+pred_prob_knn = knn_clf.predict_proba(X_test)
+fpr_knn, tpr_knn, thresh_knn = roc_curve(Y_test, pred_prob_knn[:,1], pos_label=1)
+
+# Logistice Regression
+
+lr_clf=LogisticRegression()
+lr_clf.fit(X_train,Y_train)
+lr_clf.score(X_test,Y_test)
+
+y_predict_lr = lr_clf.predict(X_test)
+lr_cm = confusion_matrix(Y_test, y_predict_lr)
+sns.heatmap(lr_cm, annot=True)
+
+print(classification_report(Y_test,y_predict_lr))
+lr_cm = acc_sensitivity_specificity(Y_test, y_predict_lr)
+print('Accuracy', 'Specificity', 'Sensitivity')
+print('----------------------')
+print(np.round(lr_cm,4)*100)
+
+pred_prob_lr = lr_clf.predict_proba(X_test)
+fpr_lr, tpr_lr, thresh_lr = roc_curve(Y_test, pred_prob_lr[:,1], pos_label=1)
+
+# SVM Linear Kernel
+
+svl_clf=SVC(kernel='linear', probability = True)
+svl_clf.fit(X_train,Y_train)
+svl_clf.score(X_test,Y_test)
+
+y_predict_svl = svl_clf.predict(X_test)
+svl_cm = confusion_matrix(Y_test, y_predict_svl)
+sns.heatmap(svl_cm, annot=True)
+
+print(classification_report(Y_test,y_predict_svl))
+svl_cm = acc_sensitivity_specificity(Y_test, y_predict_svl)
+print('Accuracy', 'Specificity', 'Sensitivity')
+print('----------------------')
+print(np.round(nb_cm,4)*100)
+
+pred_prob_svl = svl_clf.predict_proba(X_test)
+fpr_svl, tpr_svl, thresh_svl = roc_curve(Y_test, pred_prob_svl[:,1], pos_label=1)
+
+# SVM Polynomial Kernel
+
+svp_clf=SVC(kernel = 'poly',probability = True)
+svp_clf.fit(X_train,Y_train)
+svp_clf.score(X_test,Y_test)
+
+y_predict_svp = svp_clf.predict(X_test)
+svp_cm = confusion_matrix(Y_test, y_predict_svp)
+sns.heatmap(svp_cm, annot=True)
+
+print(classification_report(Y_test,y_predict_svp))
+svp_cm = acc_sensitivity_specificity(Y_test, y_predict_svp)
+print('Accuracy', 'Specificity', 'Sensitivity')
+print('----------------------')
+print(np.round(nb_cm,4)*100)
+
+pred_prob_svp = svp_clf.predict_proba(X_test)
+fpr_svp, tpr_svp, thresh_svp = roc_curve(Y_test, pred_prob_svp[:,1], pos_label=1)
+
+# SVM RBF Kernel
+
+svr_clf=SVC(kernel = 'rbf',probability = True)
+svr_clf.fit(X_train,Y_train)
+svr_clf.score(X_test,Y_test)
+
+y_predict_svr = svr_clf.predict(X_test)
+svr_cm = confusion_matrix(Y_test, y_predict_svr)
+sns.heatmap(svr_cm, annot=True)
+
+print(classification_report(Y_test,y_predict_svr))
+svr_cm = acc_sensitivity_specificity(Y_test, y_predict_svr)
+print('Accuracy', 'Specificity', 'Sensitivity')
+print('----------------------')
+print(np.round(nb_cm,4)*100)
+
+pred_prob_svr = svr_clf.predict_proba(X_test)
+fpr_svr, tpr_svr, thresh_svr = roc_curve(Y_test, pred_prob_svr[:,1], pos_label=1)
+
+# AUC Score Calculation
+
+auc_score_nb = roc_auc_score(Y_test, pred_prob_nb[:,1])
+auc_score_knn = roc_auc_score(Y_test, pred_prob_knn[:,1])
+auc_score_lr = roc_auc_score(Y_test, pred_prob_lr[:,1])
+auc_score_svl = roc_auc_score(Y_test, pred_prob_svl[:,1])
+auc_score_svp = roc_auc_score(Y_test, pred_prob_svp[:,1])
+auc_score_svr = roc_auc_score(Y_test, pred_prob_svr[:,1])
+
+print('Area Under ROC for Naive Bayes Classifier : ', auc_score_nb)
+print('Area Under ROC for KNN Classifier : ', auc_score_knn)
+print('Area Under ROC for Logistic Regression : ', auc_score_lr)
+print('Area Under ROC for SVM Linear kernel : ', auc_score_svl)
+print('Area Under ROC for SVM Polynomial kernel : ', auc_score_svp)
+print('Area Under ROC for SVM RBF kernel : ', auc_score_svr)
+
+# ROC Curve
+
+random_probs = [0 for i in range(len(Y_test))]
+p_fpr, p_tpr, _ = roc_curve(Y_test, random_probs, pos_label=1)
+
+plt.plot(fpr_nb, tpr_nb, linestyle='--', label = 'Naive Bayes (AUC = %0.3f)' % (auc_score_nb))
+plt.plot(fpr_knn, tpr_knn, linestyle='--', label = 'KNN (AUC = %0.3f)' % (auc_score_knn))
+plt.plot(fpr_lr, tpr_lr, linestyle='--', label = 'Logistic Regression (AUC = %0.3f)' % (auc_score_lr))
+plt.plot(fpr_svl, tpr_svl, linestyle='--', label = 'SVM Linear Kernel (AUC = %0.3f)' % (auc_score_svl))
+plt.plot(fpr_svp, tpr_svp, linestyle='--', label = 'SVM Polynomial Kernel (AUC = %0.3f)' % (auc_score_svp))
+plt.plot(fpr_svr, tpr_svr, linestyle='--', label = 'SVM RBF Kernel (AUC = %0.3f)' % (auc_score_svr))
+
+plt.plot(p_fpr, p_tpr, linestyle='--', label = 'A random Classifier')
+plt.plot([0, 0, 1], [0, 1, 1], linestyle=':', color = 'black', label='Perfect Classifier')
+# title
+plt.title('ROC curve')
+# x label
+plt.xlabel('False Positive Rate')
+# y label
+plt.ylabel('True Positive rate')
+
+plt.legend(loc='best')
+plt.show()
+
+# Conclusion
+
+Machine learning techniques play a fundamental role in data analysis, allowing one to obtain patterns and relationships between different classes automatically and efficiently. These techniques are increasingly being applied to EEG analysis, facilitating the use of this low-cost clinical test to detect or extract information on various neurological diseases. Despite the limited number of articles found, it can be noticed that the studies using the resting state tests to classify PD predominate, emphasizing a lack of studies using motor activation tests as well as studies focused on the progression of the disease. There is a great heterogeneity in the data provided by the articles, with a lack of clinical variables such as the use of medication during the recordings and the stage of the disease. In general, the size of the datasets considered in the studies is relatively small compared to the one usually found in the ML literature. However, the selected articles exhibited good results in the classification problem, with values higher than 90% in various studies. A further analysis of the models considered in these articles indicated that both the features introduced into the model and its architecture were essential for a good performance in predicting the classification. On the contrary, the cleaning protocol of the EEG, which was highly heterogeneous among the different studies, did not influence the results, and thus it could be omitted. Since this cleaning process is usually carried out manually, omitting it would benefit the development of an efficient and fast automatic prediction model. Finally, it should be emphasized that ML techniques have experienced significant growth in recent years, incorporating more complex models, and thus, this review and the conclusions obtained herein should be considered as a first step in the analysis of the role played by ML techniques and EEG in the study of PD.
+
